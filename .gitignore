@@ -14,6 +14,7 @@ Thumbs.db # Windows
 *.xml
 *.dot
 *.log
+tmp*
 
 # python
 *.pyc
@@ -28,7 +29,8 @@ Thumbs.db # Windows
 *.db
 
 # folder receiving the compilation products
-build*
+build/*
+build/
 install
 lib
 bin
@@ -76,3 +78,9 @@ Production
 
 **/.vscode
 **/.vs
+
+# .DS_Store files
+.DS_Store
+
+# Other build files
+*-stamp
