@@ -20,7 +20,7 @@ BUILD_DEPENDENCIES=ON     # We better do this. Otherwise the user must fetch eve
 USE_POPSIFT=OFF           # This is CUDA based, so this is a no.
 USE_GPU_SIFT_IMPL=OFF     # See above.
 USE_OPEN_GV=ON            # We build them, why not use them?
-USE_ONNX_RT=ON            # This is available on macOS, so use it.
+USE_ONNX_RT=OFF           # This is available on macOS, so use it (apparently only on Apple Silicon...)
 USE_OPEN_CV=ON            # Again, this will be build and therefore it can be included.
 USE_OPEN_CV_EXTRA=ON      # Idk. We will see.
 ADD_RPATH=ON              # I think this is a good idea. Otherwise we will have problems with dyld later.
@@ -50,8 +50,6 @@ cd build
 #
 # --------------------------------------------
 
-export CC=/usr/local/opt/llvm/bin/clang
-export CXX=/usr/local/opt/llvm/bin/clang++
 export LDFLAGS="-L/usr/local/lib -std=c++17"
 export CPPFLAGS="-I/usr/local/opt/llvm/include -lc++abi -std=c++17"
 
@@ -61,10 +59,11 @@ export CPPFLAGS="-I/usr/local/opt/llvm/include -lc++abi -std=c++17"
 #
 # --------------------------------------------
 
-CC=/usr/local/opt/llvm/bin/clang \
-CXX=/usr/local/opt/llvm/bin/clang++ \
 LDFLAGS="-L/usr/local/lib -std=c++17" \
 CPPFLAGS="-I/usr/local/opt/llvm/include -lc++abi -std=c++17" \
+CC="/usr/local/opt/llvm/bin/clang" \
+CXX="/usr/local/opt/llvm/bin/clang++" \
+BOOST_ROOT="/usr/local/opt/boost" \
 cmake -DAV_USE_CUDA=${USE_CUDA} \
 -DAV_USE_OPENMP=${USE_OPENMP} \
 -DAV_BUILD_POPSIFT=${USE_POPSIFT} \

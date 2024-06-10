@@ -69,6 +69,7 @@ if(ALICEVISION_HAVE_OPENCV)
   endif()
 endif()
 
+find_package(glog REQUIRED)
 
 alicevision_add_library(aliceVision_feature
   SOURCES ${features_files_headers} ${features_files_sources}
@@ -78,6 +79,7 @@ alicevision_add_library(aliceVision_feature
     aliceVision_system
     aliceVision_gpu
     vlsift
+    glog::glog
   PRIVATE_LINKS
     Boost::boost
 )

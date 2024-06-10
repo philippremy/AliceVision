@@ -71,12 +71,15 @@ set(multiview_files_test_data
   NViewDataSet.cpp
 )
 
+find_package(glog REQUIRED)
+
 alicevision_add_library(aliceVision_multiview
   SOURCES ${multiview_files_headers} ${multiview_files_sources}
   PUBLIC_LINKS
     aliceVision_numeric
     aliceVision_robustEstimation
     ${CERES_LIBRARIES}
+    glog::glog
   PRIVATE_LINKS
     aliceVision_system
     ${LEMON_LIBRARY}

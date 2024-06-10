@@ -38,7 +38,8 @@ option(AV_BUILD_EXPAT "Enable building an embedded Expat library" ON)
 option(AV_BUILD_OPENEXR "Enable building an embedded OpenExr library" ON)
 option(AV_BUILD_ALEMBIC "Enable building an embedded Alembic library" ON)
 option(AV_BUILD_OPENIMAGEIO "Enable building an embedded OpenImageIO library" ON)
-option(AV_BUILD_BOOST "Enable building an embedded Boost library" ON)
+# Disable until the bug in LLVM 18 is fixed, libc++ generates a linker error currently!
+option(AV_BUILD_BOOST "Enable building an embedded Boost library" OFF)
 option(AV_BUILD_CERES "Enable building an embedded Ceres library" ON)
 option(AV_BUILD_SWIG "Enable building an embedded SWIG library" ON)
 option(AV_BUILD_OPENMESH "Enable building an embedded OpenMesh library" ON)
@@ -173,30 +174,58 @@ if(AV_BUILD_GEOGRAM)
 
     set(GEOGRAM_TARGET geogram)
 
-    ExternalProject_Add(${GEOGRAM_TARGET}
-        URL https://github.com/BrunoLevy/geogram/releases/download/v1.8.8/geogram_1.8.8.tar.gz
-        URL_HASH MD5=e66563683fad771ef19fdf8b42c8b2a4
-        DOWNLOAD_DIR ${BUILD_DIR}/download/geogram
-        PREFIX ${BUILD_DIR}
-        BUILD_IN_SOURCE 0
-        BUILD_ALWAYS 0
-        UPDATE_COMMAND ""
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/geogram
-        BINARY_DIR ${BUILD_DIR}/geogram_internal_build
-        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND} ${CMAKE_CORE_BUILD_FLAGS}
-            ${ZLIB_CMAKE_FLAGS}
-            -DVORPALINE_PLATFORM=${VORPALINE_PLATFORM}
-            -DGEOGRAM_WITH_HLBFGS=OFF
-            -DGEOGRAM_WITH_TETGEN=OFF
-            -DGEOGRAM_WITH_GRAPHICS=OFF
-            -DGEOGRAM_WITH_EXPLORAGRAM=OFF
-            -DGEOGRAM_WITH_LUA=OFF
-            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-            <SOURCE_DIR>
-        BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
-        DEPENDS ${ZLIB_TARGET}
-    )
+    if(APPLE)
+        ExternalProject_Add(${GEOGRAM_TARGET}
+            GIT_REPOSITORY https://github.com/philippremy/geogram.git
+            GIT_TAG 8b3be291fbd2af8ab519a1c3553ff8d974ce0a16
+            DOWNLOAD_DIR ${BUILD_DIR}/download/geogram
+            GIT_SUBMODULES_RECURSE TRUE
+            PREFIX ${BUILD_DIR}
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            UPDATE_COMMAND ""
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/geogram
+            BINARY_DIR ${BUILD_DIR}/geogram_internal_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND ${CMAKE_COMMAND} ${CMAKE_CORE_BUILD_FLAGS}
+                ${ZLIB_CMAKE_FLAGS}
+                -DGEOGRAM_WITH_HLBFGS=OFF
+                -DGEOGRAM_WITH_TETGEN=OFF
+                -DGEOGRAM_WITH_GRAPHICS=OFF
+                -DGEOGRAM_WITH_EXPLORAGRAM=OFF
+                -DGEOGRAM_WITH_LUA=OFF
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                <SOURCE_DIR>
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+            DEPENDS ${ZLIB_TARGET}
+        )
+    else()
+        ExternalProject_Add(${GEOGRAM_TARGET}
+            GIT_REPOSITORY https://github.com/philippremy/geogram.git
+            GIT_TAG 8b3be291fbd2af8ab519a1c3553ff8d974ce0a16
+            DOWNLOAD_DIR ${BUILD_DIR}/download/geogram
+            GIT_SUBMODULES_RECURSE TRUE
+            PREFIX ${BUILD_DIR}
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            UPDATE_COMMAND ""
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/geogram
+            BINARY_DIR ${BUILD_DIR}/geogram_internal_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND ${CMAKE_COMMAND} ${CMAKE_CORE_BUILD_FLAGS}
+                ${ZLIB_CMAKE_FLAGS}
+                -DVORPALINE_PLATFORM=${VORPALINE_PLATFORM}
+                -DGEOGRAM_WITH_HLBFGS=OFF
+                -DGEOGRAM_WITH_TETGEN=OFF
+                -DGEOGRAM_WITH_GRAPHICS=OFF
+                -DGEOGRAM_WITH_EXPLORAGRAM=OFF
+                -DGEOGRAM_WITH_LUA=OFF
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                <SOURCE_DIR>
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+            DEPENDS ${ZLIB_TARGET}
+        )
+    endif()
 
     set(GEOGRAM_CMAKE_FLAGS 
         -DGEOGRAM_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} 
@@ -207,17 +236,17 @@ endif()
 if(AV_BUILD_ASSIMP)
     set(ASSIMP_TARGET assimp)
 
-    set(ASSIMP_BUILD_OPTIONS 
+    set(ASSIMP_BUILD_OPTIONS
         -DASSIMP_BUILD_ASSIMP_TOOLS:BOOL=OFF 
-        -DASSIMP_BUILD_TESTS:BOOL=OFF 
+        -DASSIMP_BUILD_TESTS:BOOL=OFF
         -DASSIMP_BUILD_DRACO:BOOL=ON
     )
 
     set(ASSIMP_AV_VERSION 5.2.5)
 
     ExternalProject_Add(${ASSIMP_TARGET}
-        URL https://github.com/assimp/assimp/archive/refs/tags/v5.2.5.tar.gz
-        URL_HASH MD5=0b5a5a2714f1126b9931cdb95f512c91
+        GIT_REPOSITORY https://github.com/philippremy/assimp.git
+        GIT_TAG 2fea8f8d934862812ee5c0fc806f57355e893fcf
         DOWNLOAD_DIR ${BUILD_DIR}/download/assimp
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
@@ -629,13 +658,11 @@ if(AV_BUILD_BOOST)
         BINARY_DIR ${BUILD_DIR}/boost_build
         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
         CONFIGURE_COMMAND 
-            cd <SOURCE_DIR> && 
-            ./bootstrap.${SCRIPT_EXTENSION} --prefix=<INSTALL_DIR> --with-libraries=atomic,container,date_time,exception,graph,iostreams,json,log,math,program_options,regex,serialization,system,test,thread,stacktrace,timer
-        BUILD_COMMAND 
-            cd <SOURCE_DIR> && 
-            ./b2 --prefix=<INSTALL_DIR> variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE} cxxstd=17 link=shared threading=multi -j8
-        INSTALL_COMMAND 
-            cd <SOURCE_DIR> && 
+            cd <SOURCE_DIR> && ./bootstrap.${SCRIPT_EXTENSION} --prefix=<INSTALL_DIR> --with-libraries=atomic,container,date_time,exception,graph,iostreams,json,log,math,program_options,regex,serialization,system,test,thread,stacktrace,timer
+        BUILD_COMMAND
+            cd <SOURCE_DIR> && ./b2 --prefix=<INSTALL_DIR> variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE} cxxstd=17 link=shared threading=multi -j8
+        INSTALL_COMMAND
+            cd <SOURCE_DIR> &&
             ./b2 variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE}  cxxstd=17 link=shared threading=multi install
         DEPENDS ${ZLIB_TARGET}
     )
@@ -647,19 +674,36 @@ if(AV_BUILD_FFMPEG)
     if(AV_BUILD_VPX)
         set(VPX_TARGET libvpx)
 
-        ExternalProject_add(${VPX_TARGET}
-            GIT_REPOSITORY https://chromium.googlesource.com/webm/libvpx.git
-            GIT_TAG v1.13.0
-            GIT_PROGRESS OFF
-            PREFIX ${BUILD_DIR}
-            BUILD_IN_SOURCE 0
-            BUILD_ALWAYS 0
-            UPDATE_COMMAND ""
-            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
-                --enable-shared --disable-static --disable-examples
-            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
-        )
+        if(APPLE)
+            ExternalProject_add(${VPX_TARGET}
+                GIT_REPOSITORY https://chromium.googlesource.com/webm/libvpx.git
+                GIT_TAG v1.13.0
+                GIT_PROGRESS OFF
+                PREFIX ${BUILD_DIR}
+                BUILD_IN_SOURCE 0
+                BUILD_ALWAYS 0
+                UPDATE_COMMAND ""
+                INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+                CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+                    --enable-shared --disable-static --disable-examples --target=x86_64-darwin23-gcc
+                BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+            )
+        else()
+            ExternalProject_add(${VPX_TARGET}
+                GIT_REPOSITORY https://chromium.googlesource.com/webm/libvpx.git
+                GIT_TAG v1.13.0
+                GIT_PROGRESS OFF
+                PREFIX ${BUILD_DIR}
+                BUILD_IN_SOURCE 0
+                BUILD_ALWAYS 0
+                UPDATE_COMMAND ""
+                INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+                CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+                    --enable-shared --disable-static --disable-examples
+                BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+            )
+        endif()
+
     endif()
 
     set(FFMPEG_TARGET ffmpeg)
@@ -960,50 +1004,99 @@ if(AV_BUILD_OPENCV)
         INSTALL_COMMAND ""
     )
 
-    ExternalProject_Add(${OPENCV_TARGET}
-        URL https://github.com/opencv/opencv/archive/4.7.0.zip
-        URL_HASH MD5=481a9ee5b0761978832d02d8861b8156
-        DOWNLOAD_DIR ${BUILD_DIR}/download/opencv
-        UPDATE_COMMAND ""
-        BUILD_IN_SOURCE 0
-        BUILD_ALWAYS 0
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/opencv
-        BINARY_DIR ${BUILD_DIR}/opencv_build
-        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-        CONFIGURE_COMMAND 
-            ${CMAKE_COMMAND} 
-            ${CMAKE_CORE_BUILD_FLAGS}
-            -DOPENCV_EXTRA_MODULES_PATH=${CMAKE_CURRENT_BINARY_DIR}/opencv_contrib/modules
-            ${ZLIB_CMAKE_FLAGS} ${TBB_CMAKE_FLAGS}
-            ${TIFF_CMAKE_FLAGS} ${PNG_CMAKE_FLAGS} ${JPEG_CMAKE_FLAGS} ${LIBRAW_CMAKE_FLAGS}
-            -DWITH_TBB=ON
-            -DWITH_FFMPEG=${AV_BUILD_FFMPEG}
-            -DBUILD_opencv_python2=OFF
-            -DBUILD_opencv_python3=OFF
-            -DWITH_GTK_2_X=OFF
-            -DWITH_V4L=OFF
-            -DINSTALL_C_EXAMPLES=OFF
-            -DINSTALL_PYTHON_EXAMPLES=OFF
-            -DBUILD_EXAMPLES=OFF
-            -DWITH_QT=OFF
-            -DWITH_OPENGL=OFF
-            -DWITH_VTK=OFF
-            -DWITH_OPENEXR=OFF  # Build error OFF IlmBase includes without "OpenEXR/" prefix
-            -DENABLE_PRECOMPILED_HEADERS=OFF
-            -DBUILD_SHARED_LIBS=ON
-            -DWITH_CUDA=OFF
-            -DWITH_OPENCL=OFF
-            -DBUILD_TESTS=OFF
-            -DBUILD_LIST=core,improc,photo,objdetect,video,imgcodecs,videoio,features2d,xfeatures2d,version,mcc,optflow
-            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-            <SOURCE_DIR>
-        BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+    if(APPLE)
+        ExternalProject_Add(${OPENCV_TARGET}
+            GIT_REPOSITORY https://github.com/philippremy/opencv.git
+            GIT_TAG 2ca9f33f395404fa748455c5b566f6a3491aac4e
+            DOWNLOAD_DIR ${BUILD_DIR}/download/opencv
+            UPDATE_COMMAND ""
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/opencv
+            BINARY_DIR ${BUILD_DIR}/opencv_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND 
+                ${CMAKE_COMMAND}
+                ${CMAKE_CORE_BUILD_FLAGS}
+                -DOPENCV_EXTRA_MODULES_PATH=${CMAKE_CURRENT_BINARY_DIR}/opencv_contrib/modules
+                ${TBB_CMAKE_FLAGS}
+                ${TIFF_CMAKE_FLAGS} ${PNG_CMAKE_FLAGS} ${JPEG_CMAKE_FLAGS} ${LIBRAW_CMAKE_FLAGS}
+                -DWITH_TBB=ON
+                -DWITH_FFMPEG=${AV_BUILD_FFMPEG}
+                -DBUILD_ZLIB=OFF
+                -DBUILD_opencv_python2=OFF
+                -DBUILD_opencv_python3=OFF
+                -DWITH_GTK_2_X=OFF
+                -DWITH_V4L=OFF
+                -DINSTALL_C_EXAMPLES=OFF
+                -DINSTALL_PYTHON_EXAMPLES=OFF
+                -DBUILD_EXAMPLES=OFF
+                -DWITH_QT=OFF
+                -DWITH_OPENGL=OFF
+                -DWITH_VTK=OFF
+                -DWITH_OPENEXR=OFF  # Build error OFF IlmBase includes without "OpenEXR/" prefix
+                -DENABLE_PRECOMPILED_HEADERS=OFF
+                -DBUILD_SHARED_LIBS=ON
+                -DWITH_CUDA=OFF
+                -DWITH_OPENCL=OFF
+                -DBUILD_TESTS=OFF
+                -DBUILD_LIST=core,improc,photo,objdetect,video,imgcodecs,videoio,features2d,xfeatures2d,version,mcc,optflow
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                <SOURCE_DIR>
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
 
-        DEPENDS opencv_contrib 
-            ${TBB_TARGET} ${ZLIB_TARGET} ${OPENEXR_TARGET} 
-            ${TIFF_TARGET} ${PNG_TARGET} ${JPEG_TARGET} 
-            ${LIBRAW_TARGET} ${FFMPEG_TARGET}
-    )
+            DEPENDS opencv_contrib 
+                ${TBB_TARGET} ${ZLIB_TARGET} ${OPENEXR_TARGET} 
+                ${TIFF_TARGET} ${PNG_TARGET} ${JPEG_TARGET} 
+                ${LIBRAW_TARGET} ${FFMPEG_TARGET}
+        )
+    else()
+        ExternalProject_Add(${OPENCV_TARGET}
+            URL https://github.com/opencv/opencv/archive/4.7.0.zip
+            URL_HASH MD5=481a9ee5b0761978832d02d8861b8156
+            DOWNLOAD_DIR ${BUILD_DIR}/download/opencv
+            UPDATE_COMMAND ""
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/opencv
+            BINARY_DIR ${BUILD_DIR}/opencv_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND 
+                ${CMAKE_COMMAND}
+                ${CMAKE_CORE_BUILD_FLAGS}
+                -DOPENCV_EXTRA_MODULES_PATH=${CMAKE_CURRENT_BINARY_DIR}/opencv_contrib/modules
+                ${ZLIB_CMAKE_FLAGS} ${TBB_CMAKE_FLAGS}
+                ${TIFF_CMAKE_FLAGS} ${PNG_CMAKE_FLAGS} ${JPEG_CMAKE_FLAGS} ${LIBRAW_CMAKE_FLAGS}
+                -DWITH_TBB=ON
+                -DWITH_FFMPEG=${AV_BUILD_FFMPEG}
+                -DBUILD_ZLIB=OFF
+                -DBUILD_opencv_python2=OFF
+                -DBUILD_opencv_python3=OFF
+                -DWITH_GTK_2_X=OFF
+                -DWITH_V4L=OFF
+                -DINSTALL_C_EXAMPLES=OFF
+                -DINSTALL_PYTHON_EXAMPLES=OFF
+                -DBUILD_EXAMPLES=OFF
+                -DWITH_QT=OFF
+                -DWITH_OPENGL=OFF
+                -DWITH_VTK=OFF
+                -DWITH_OPENEXR=OFF  # Build error OFF IlmBase includes without "OpenEXR/" prefix
+                -DENABLE_PRECOMPILED_HEADERS=OFF
+                -DBUILD_SHARED_LIBS=ON
+                -DWITH_CUDA=OFF
+                -DWITH_OPENCL=OFF
+                -DBUILD_TESTS=OFF
+                -DBUILD_LIST=core,improc,photo,objdetect,video,imgcodecs,videoio,features2d,xfeatures2d,version,mcc,optflow
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                <SOURCE_DIR>
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+
+            DEPENDS opencv_contrib 
+                ${TBB_TARGET} ${ZLIB_TARGET} ${OPENEXR_TARGET} 
+                ${TIFF_TARGET} ${PNG_TARGET} ${JPEG_TARGET} 
+                ${LIBRAW_TARGET} ${FFMPEG_TARGET}
+        )
+    endif()
     
     set(OPENCV_CMAKE_FLAGS 
         -DOpenCV_DIR=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/opencv4 
@@ -1016,8 +1109,8 @@ if(AV_BUILD_CCTAG)
     set(CCTAG_TARGET cctag)
 
     ExternalProject_Add(${CCTAG_TARGET}
-        GIT_REPOSITORY https://github.com/alicevision/CCTag
-        GIT_TAG v1.0.3
+        GIT_REPOSITORY https://github.com/philippremy/CCTag.git
+        GIT_TAG 617dc402bd9bcced4dc7ca5b2a5157fb7edd47fd
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
         BUILD_ALWAYS 0
@@ -1260,8 +1353,7 @@ if(AV_BUILD_SWIG)
     set(SWIG_TARGET SWIG)
 
     ExternalProject_Add(${SWIG_TARGET}
-        GIT_REPOSITORY https://github.com/swig/swig
-        GIT_TAG v4.2.0
+        GIT_REPOSITORY https://github.com/philippremy/swig.git
         DOWNLOAD_DIR ${BUILD_DIR}/download/${SWIG_TARGET}
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
@@ -1308,24 +1400,44 @@ if(AV_BUILD_OPENMESH)
     # Add openmesh
     set(OPENMESH_TARGET OpenMesh)
 
-    ExternalProject_add(${OPENMESH_TARGET}
-        URL https://www.graphics.rwth-aachen.de/media/openmesh_static/Releases/10.0/OpenMesh-10.0.0.tar.bz2
-        URL_HASH MD5=4d166aecbc09df58b38de9759c92a437
-        DOWNLOAD_DIR ${BUILD_DIR}/download/${OPENMESH_TARGET}
-        PREFIX ${BUILD_DIR}
-        BUILD_IN_SOURCE 0
-        BUILD_ALWAYS 0
-        UPDATE_COMMAND ""
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OPENMESH_TARGET}
-        BINARY_DIR ${BUILD_DIR}/${OPENMESH_TARGET}_build
-        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-        CONFIGURE_COMMAND ${CMAKE_COMMAND}
-            -DCMAKE_BUILD_TYPE=Release
-            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
-            -DBUILD_APPS=OFF
-            -DOPENMESH_DOCS=OFF
-        BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
-    )
+    if(APPLE)
+        ExternalProject_add(${OPENMESH_TARGET}
+            GIT_REPOSITORY https://gitlab.com/philippremy/OpenMesh.git
+            DOWNLOAD_DIR ${BUILD_DIR}/download/${OPENMESH_TARGET}
+            PREFIX ${BUILD_DIR}
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            UPDATE_COMMAND ""
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OPENMESH_TARGET}
+            BINARY_DIR ${BUILD_DIR}/${OPENMESH_TARGET}_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND ${CMAKE_COMMAND}
+                -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
+                -DBUILD_APPS=OFF
+                -DOPENMESH_DOCS=OFF
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+        )
+    else()
+        ExternalProject_add(${OPENMESH_TARGET}
+            URL https://www.graphics.rwth-aachen.de/media/openmesh_static/Releases/10.0/OpenMesh-10.0.0.tar.bz2
+            URL_HASH MD5=4d166aecbc09df58b38de9759c92a437
+            DOWNLOAD_DIR ${BUILD_DIR}/download/${OPENMESH_TARGET}
+            PREFIX ${BUILD_DIR}
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            UPDATE_COMMAND ""
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OPENMESH_TARGET}
+            BINARY_DIR ${BUILD_DIR}/${OPENMESH_TARGET}_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND ${CMAKE_COMMAND}
+                -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
+                -DBUILD_APPS=OFF
+                -DOPENMESH_DOCS=OFF
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+        )
+    endif()
 
     set(OPENMESH_CMAKE_FLAGS -DOPENMESH_DIR:PATH=${CMAKE_INSTALL_PREFIX}/share/OpenMesh/cmake)
 endif()

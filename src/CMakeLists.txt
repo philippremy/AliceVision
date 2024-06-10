@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 message("CMake version: ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}")
 
+if(APPLE)
+  set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
+  set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
+  find_package(PugiXML REQUIRED)
+endif()
+
 # ==============================================================================
 # AliceVision version
 # ==============================================================================
@@ -21,9 +27,9 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed.")
 endif()
 
-if(NOT ALICEVISION_ROOT)
-  message(FATAL_ERROR "Should build from the CMakeLists.txt in the root folder.")
-endif()
+#if(NOT ALICEVISION_ROOT)
+#  message(FATAL_ERROR "Should build from the CMakeLists.txt in the root folder.")
+#endif()
 
 # Trilean option
 function(trilean_option NAME DESCRIPTION DEFAULT_VALUE)
@@ -254,6 +260,30 @@ endif()
 if(ALICEVISION_USE_OPENMP STREQUAL "OFF")
   set(ALICEVISION_HAVE_OPENMP 0)
 else() # ON OR AUTO
+
+  if(APPLE)
+    set(CMAKE_C_COMPILER "/usr/local/Cellar/llvm/bin/clang")
+    set(CMAKE_CXX_COMPILER "/usr/local/Cellar/llvm/bin/clang++")
+    set(OPENMP_LIBRARIES "/usr/local/Cellar/llvm/lib")
+    set(OPENMP_INCLUDES "/usr/local/Cellar/llvm/include")
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+      set(OpenMP_C "${CMAKE_C_COMPILER}")
+      set(OpenMP_C_FLAGS "-fopenmp")
+      set(OpenMP_C_LIB_NAMES "libomp" "libgomp" "libiomp5")
+      set(OpenMP_libomp_LIBRARY ${OpenMP_C_LIB_NAMES})
+      set(OpenMP_libgomp_LIBRARY ${OpenMP_C_LIB_NAMES})
+      set(OpenMP_libiomp5_LIBRARY ${OpenMP_C_LIB_NAMES})
+    endif()
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(OpenMP_CXX "${CMAKE_CXX_COMPILER}")
+      set(OpenMP_CXX_FLAGS "-fopenmp")
+      set(OpenMP_CXX_LIB_NAMES "libomp" "libgomp" "libiomp5")
+      set(OpenMP_libomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+      set(OpenMP_libgomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+      set(OpenMP_libiomp5_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+    endif()
+  endif()
+
   find_package(OpenMP)
 
   if(OPENMP_FOUND)
@@ -288,6 +318,16 @@ set(ALICEVISION_BOOST_COMPONENTS atomic container date_time graph json log log_s
 if(ALICEVISION_BUILD_TESTS)
     set(ALICEVISION_BOOST_COMPONENT_UNITTEST unit_test_framework)
 endif()
+
+# assume built-in pthreads on MacOS
+if(APPLE)
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+endif()
+
 find_package(Boost 1.76.0 QUIET COMPONENTS ${ALICEVISION_BOOST_COMPONENTS} ${ALICEVISION_BOOST_COMPONENT_UNITTEST})
 
 if(Boost_FOUND)
