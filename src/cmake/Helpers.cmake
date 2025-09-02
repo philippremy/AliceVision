@@ -234,7 +234,7 @@ function(alicevision_add_software software_name)
 
     set_target_properties(${software_name}_exe
         PROPERTIES SOVERSION ${ALICEVISION_SOFTWARE_VERSION_MAJOR}
-        VERSION "${ALICEVISION_SOFTWARE_VERSION_MAJOR}.${ALICEVISION_SOFTWARE_VERSION_MINOR}"
+        VERSION "${ALICEVISION_SOFTWARE_VERSION_MAJOR}_${ALICEVISION_SOFTWARE_VERSION_MINOR}"
     )
 
     install(TARGETS ${software_name}_exe
