@@ -1,6 +1,9 @@
 #Build rules for all dependencies 
 include(ExternalProject)
 
+# Set CMP0135 to properly rebuild if URLs change
+cmake_policy(SET CMP0135 NEW)
+
 set(AV_BUILD_DEPENDENCIES_PARALLEL 1
     CACHE STRING "Number of cores to use when building dependencies (0 - use the number of cores of the processor)"
 )
