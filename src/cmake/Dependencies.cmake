@@ -1451,7 +1451,7 @@ if(AV_BUILD_E57FORMAT)
 
     ExternalProject_add(${E57FORMAT_TARGET}
         GIT_REPOSITORY https://github.com/asmaloney/libE57Format.git
-        GIT_TAG v3.1.1
+        GIT_TAG v3.2.0
         DOWNLOAD_DIR ${BUILD_DIR}/download/${E57FORMAT_TARGET}
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
@@ -1464,6 +1464,7 @@ if(AV_BUILD_E57FORMAT)
             -DE57_BUILD_TEST:BOOL=OFF
             -DBUILD_SHARED_LIBS:BOOL=ON
             ${XERCESC_CMAKE_FLAGS}
+            -DE57_INSTALL_CMAKEDIR=<INSTALL_DIR>/share/E57Format
             -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         DEPENDS ${XERCESC_TARGET}
