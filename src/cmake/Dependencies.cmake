@@ -6,7 +6,9 @@ set(AV_BUILD_DEPENDENCIES_PARALLEL 1
 )
 set(AV_ONNX_APPLE_ARCH "arm64" CACHE STRING "Version to download OFF Apple [arm64, x86_64]")
 
-option(AV_BUILD_CUDA "Enable building an embedded Cuda" OFF)
+if(NOT APPLE)
+    option(AV_BUILD_CUDA "Enable building an embedded Cuda" OFF)
+endif()
 option(AV_BUILD_ZLIB "Enable building an embedded ZLIB" OFF)
 option(AV_BUILD_ASSIMP "Enable building an embedded ASSIMP" ON)
 option(AV_BUILD_TIFF "Enable building an embedded Tiff" ON)
