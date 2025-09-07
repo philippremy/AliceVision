@@ -535,8 +535,10 @@ endif()
 
 if(AV_BUILD_PNG)
     # Add LibPng
-    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
-        set(AV_PNG_ARM_NEON OFF)
+    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+        # Enable ARM NEON on ARM CPUs, as it should be
+        # supported on any reasonably modern ARM CPU
+        set(AV_PNG_ARM_NEON on)
     else()
         set(AV_PNG_ARM_NEON off)
     endif()
@@ -545,8 +547,8 @@ if(AV_BUILD_PNG)
 
     ExternalProject_Add(
         ${PNG_TARGET}
-        URL https://download.sourceforge.net/libpng/libpng-1.6.39.tar.gz
-        URL_HASH MD5=93b8e79a008747e70f7704f600349559
+        URL https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz
+        URL_HASH MD5=4a6433f54317b8f0d4cb749c09d4eff2
         DOWNLOAD_DIR ${BUILD_DIR}/download/libpng
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
