@@ -63,6 +63,11 @@ option(AV_BUILD_CERES "Enable building an embedded Ceres library" ON)
 option(AV_BUILD_SWIG "Enable building an embedded SWIG library" ON)
 option(AV_BUILD_PYBIND11 "Enable building of pybind11 library" OFF)
 option(AV_BUILD_OPENMESH "Enable building an embedded OpenMesh library" ON)
+if(AV_BUILD_E57FORMAT)
+    option(AV_BUILD_XERCESC "Enable building an embedded XercesC library" ON)
+else()
+    option(AV_BUILD_XERCESC "Enable building an embedded XercesC library" OFF)
+endif()
 
 if(AV_BUILD_DEPENDENCIES_PARALLEL EQUAL 0)
     cmake_host_system_information(RESULT AV_BUILD_DEPENDENCIES_PARALLEL QUERY NUMBER_OF_LOGICAL_CORES)
@@ -112,6 +117,7 @@ message(STATUS "AV_BUILD_OPENIMAGEIO ${AV_BUILD_OPENIMAGEIO}")
 message(STATUS "AV_BUILD_CERES ${AV_BUILD_CERES}")
 message(STATUS "AV_BUILD_SWIG ${AV_BUILD_SWIG}")
 message(STATUS "AV_BUILD_OPENMESH ${AV_BUILD_OPENMESH}")
+message(STATUS "AV_BUILD_XERCESC ${AV_BUILD_XERCESC}")
 message(STATUS "AV_BUILD_DEPENDENCIES_PARALLEL: ${AV_BUILD_DEPENDENCIES_PARALLEL}")
 ##########END LOGGING#########"
 
@@ -1416,6 +1422,29 @@ if(AV_BUILD_SWIG)
     )
 endif()
 
+if(AV_BUILD_XERCESC)
+    set(XERCESC_TARGET XercesC)
+
+    ExternalProject_add(${XERCESC_TARGET}
+            URL https://dlcdn.apache.org//xerces/c/3/sources/xerces-c-3.3.0.tar.gz
+            URL_HASH MD5=1b7778f47d5eab1644f59c87ed06ac19
+            DOWNLOAD_DIR ${BUILD_DIR}/download/${XERCESC_TARGET}
+            PREFIX ${BUILD_DIR}
+            BUILD_IN_SOURCE 0
+            BUILD_ALWAYS 0
+            UPDATE_COMMAND ""
+            SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${XERCESC_TARGET}
+            BINARY_DIR ${BUILD_DIR}/${XERCESC_TARGET}_build
+            INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+            CONFIGURE_COMMAND ${CMAKE_COMMAND}
+            ${CMAKE_CORE_BUILD_FLAGS}
+            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
+            BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+    )
+
+    set(XERCESC_CMAKE_FLAGS -DXercesC_DIR:PATH=${CMAKE_INSTALL_PREFIX}/lib/XercesC)
+endif()
+
 if(AV_BUILD_E57FORMAT)
     # Add libE57Format
     set(E57FORMAT_TARGET E57Format)
@@ -1434,8 +1463,10 @@ if(AV_BUILD_E57FORMAT)
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
             -DE57_BUILD_TEST:BOOL=OFF
             -DBUILD_SHARED_LIBS:BOOL=ON
+            ${XERCESC_CMAKE_FLAGS}
             -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+        DEPENDS ${XERCESC_TARGET}
     )
 
     set(E57FORMAT_CMAKE_FLAGS -DE57FORMAT_DIR:PATH=${CMAKE_INSTALL_PREFIX}/share/E57Format)
