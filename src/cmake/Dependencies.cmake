@@ -12,6 +12,11 @@ set(AV_ONNX_APPLE_ARCH "arm64" CACHE STRING "Version to download OFF Apple [arm6
 if(NOT APPLE)
     option(AV_BUILD_CUDA "Enable building an embedded Cuda" OFF)
 endif()
+if(APPLE)
+    option(AV_BUILD_OPENMP "Enable building an embedded OpenMP" ON)
+else()
+    option(AV_BUILD_OPENMP "Enable building an embedded OpenMP" OFF)
+endif()
 option(AV_BUILD_ZLIB "Enable building an embedded ZLIB" OFF)
 option(AV_BUILD_ASSIMP "Enable building an embedded ASSIMP" ON)
 option(AV_BUILD_TIFF "Enable building an embedded Tiff" ON)
@@ -56,6 +61,7 @@ endif()
 
 ##########LOGGING#########""
 message(STATUS "")
+message(STATUS "AV_BUILD_OPENMP: ${AV_BUILD_OPENMP}")
 message(STATUS "AV_BUILD_CUDA: ${AV_BUILD_CUDA}")
 message(STATUS "AV_BUILD_ZLIB: ${AV_BUILD_ZLIB}")
 message(STATUS "AV_BUILD_ASSIMP: ${AV_BUILD_ASSIMP}")
@@ -109,10 +115,35 @@ set(CMAKE_CORE_BUILD_FLAGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} 
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
         -DCMAKE_CXX_STANDARD=20
+        -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
 )
 
 
 #### START EXTERNAL ####
+if(AV_BUILD_OPENMP)
+    set(OPENMP_TARGET OpenMP)
+    ExternalProject_Add(${OPENMP_TARGET}
+        URL https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-20.1.8.zip
+        URL_HASH MD5=3b667447bfc7f17e34f91bbeab030e82
+        DOWNLOAD_DIR ${BUILD_DIR}/download/${OPENMP_TARGET}
+        PREFIX ${BUILD_DIR}
+        BUILD_IN_SOURCE 0
+        BUILD_ALWAYS 0
+        UPDATE_COMMAND ""
+        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OPENMP_TARGET}
+        BINARY_DIR ${BUILD_DIR}/${OPENMP_TARGET}_build
+        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+        CONFIGURE_COMMAND
+        ${CMAKE_COMMAND}
+        ${CMAKE_CORE_BUILD_FLAGS}
+        -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+        -DLIBOMP_ENABLE_SHARED=ON
+        -DLIBOMP_ENABLE_STATIC=OFF
+        <SOURCE_DIR>/openmp
+        BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
+    )
+endif()
+
 if(AV_BUILD_ZLIB)
     set(ZLIB_TARGET zlib)
 
@@ -606,7 +637,7 @@ if(AV_BUILD_LIBRAW)
             -DINSTALL_CMAKE_MODULE_PATH:PATH=<INSTALL_DIR>/cmake
             <SOURCE_DIR>
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
-        DEPENDS libraw_cmake ${ZLIB_TARGET}
+        DEPENDS libraw_cmake ${ZLIB_TARGET} ${OPENMP_TARGET}
     )
 
     set(LIBRAW_CMAKE_FLAGS 
@@ -814,7 +845,7 @@ if(AV_BUILD_PCL)
             ${ZLIB_CMAKE_FLAGS}
             -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
-        DEPENDS ${FLANN_TARGET} ${LZ4_TARGET} ${EIGEN_TARGET} ${BOOST_TARGET} ${PNG_TARGET} ${CUDA_TARGET} ${ZLIB_TARGET}
+        DEPENDS ${FLANN_TARGET} ${LZ4_TARGET} ${EIGEN_TARGET} ${BOOST_TARGET} ${PNG_TARGET} ${CUDA_TARGET} ${ZLIB_TARGET} ${OPENMP_TARGET}
     )
 
     set(PCL_CMAKE_FLAGS -DPCL_DIR:PATH=${CMAKE_INSTALL_PREFIX}/share/pcl-1.12/)
@@ -1423,6 +1454,7 @@ if(AV_BUILD_OPENMESH)
 endif()
 
 set(AV_DEPS
+    ${OPENMP_TARGET}
     ${ZLIB_TARGET}
     ${ASSIMP_TARGET}
     ${GEOGRAM_TARGET}
