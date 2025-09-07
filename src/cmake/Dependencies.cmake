@@ -704,7 +704,7 @@ if(AV_BUILD_FFMPEG)
 
         ExternalProject_add(${VPX_TARGET}
             GIT_REPOSITORY https://chromium.googlesource.com/webm/libvpx.git
-            GIT_TAG v1.13.0
+            GIT_TAG v1.15.2
             GIT_PROGRESS OFF
             PREFIX ${BUILD_DIR}
             BUILD_IN_SOURCE 0
