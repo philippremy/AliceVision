@@ -762,6 +762,12 @@ if(AV_BUILD_FFMPEG)
 
     set(FFMPEG_TARGET ffmpeg)
 
+    if(APPLE AND ALICEVISION_USE_RPATH)
+        set(FFMPEG_APPLE_LDFLAGS --install-name-dir=@rpath)
+    else()
+        set(FFMPEG_APPLE_LDFLAGS)
+    endif()
+
     ExternalProject_add(${FFMPEG_TARGET}
         URL https://www.ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz
         URL_HASH MD5=26f2bd7d20c6c616f31d7130c88d7250
@@ -781,6 +787,7 @@ if(AV_BUILD_FFMPEG)
             --disable-gpl
             --enable-nonfree
             --enable-libvpx
+            ${FFMPEG_APPLE_LDFLAGS}
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         DEPENDS ${VPX_TARGET}
     )
