@@ -718,6 +718,12 @@ if(AV_BUILD_FFMPEG)
     if(AV_BUILD_VPX)
         set(VPX_TARGET libvpx)
 
+        if(APPLE AND ALICEVISION_USE_RPATH)
+            set(VPX_APPLE_LDFLAGS ${CMAKE_COMMAND} -E env LDFLAGS=-Wl,-install_name,@rpath/libvpx.dylib)
+        else()
+            set(VPX_APPLE_LDFLAGS)
+        endif()
+
         ExternalProject_add(${VPX_TARGET}
             GIT_REPOSITORY https://chromium.googlesource.com/webm/libvpx.git
             GIT_TAG v1.15.2
@@ -727,7 +733,9 @@ if(AV_BUILD_FFMPEG)
             BUILD_ALWAYS 0
             UPDATE_COMMAND ""
             INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+            CONFIGURE_COMMAND
+                ${VPX_APPLE_LDFLAGS}
+                <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
                 --enable-shared --disable-static --disable-examples
             BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         )
