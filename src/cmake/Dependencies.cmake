@@ -838,8 +838,8 @@ if(AV_BUILD_PCL)
     set(PCL_TARGET pcl)
 
     ExternalProject_Add(${PCL_TARGET}
-        URL https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-1.13.0.tar.gz
-        URL_HASH MD5=987a5f6e440407a2bcae10c1022568b0
+        URL https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-1.15.1.tar.gz
+        URL_HASH MD5=e29ad2147fbe2109233e2b3a0254dbab
         DOWNLOAD_DIR ${BUILD_DIR}/download/${PCL_TARGET}
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
