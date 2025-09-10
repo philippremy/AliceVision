@@ -720,8 +720,8 @@ if(AV_BUILD_FFMPEG)
     set(FFMPEG_TARGET ffmpeg)
 
     ExternalProject_add(${FFMPEG_TARGET}
-        URL http://ffmpeg.org/releases/ffmpeg-5.1.2.tar.bz2
-        URL_HASH MD5=53ce2a391fe1db4b5ce5c43b9ea9a814
+        URL https://www.ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz
+        URL_HASH MD5=26f2bd7d20c6c616f31d7130c88d7250
         DOWNLOAD_DIR ${BUILD_DIR}/download/ffmpeg
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
