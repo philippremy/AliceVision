@@ -7,7 +7,7 @@ cmake_policy(SET CMP0135 NEW)
 set(AV_BUILD_DEPENDENCIES_PARALLEL 1
     CACHE STRING "Number of cores to use when building dependencies (0 - use the number of cores of the processor)"
 )
-set(AV_ONNX_APPLE_ARCH "arm64" CACHE STRING "Version to download OFF Apple [arm64, x86_64]")
+set(AV_ONNX_APPLE_ARCH ${CMAKE_OSX_ARCHITECTURES} CACHE STRING "Version to download OFF Apple [arm64, x86_64]")
 
 if(NOT APPLE)
     option(AV_BUILD_CUDA "Enable building an embedded Cuda" OFF)
