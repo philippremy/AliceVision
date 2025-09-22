@@ -1349,7 +1349,7 @@ if(AV_BUILD_CERES)
             ${CMAKE_COMMAND} 
             ${CMAKE_CORE_BUILD_FLAGS}
             ${SUITESPARSE_CMAKE_FLAGS}
-            -DSUITESPARSE:BOOL=ON
+            -DSUITESPARSE:BOOL=$<IF:$<PLATFORM_ID:Darwin>,OFF,ON>
             -DLAPACK:BOOL=ON
             ${EIGEN_CMAKE_FLAGS}
             -DMINIGLOG=ON
