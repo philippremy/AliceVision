@@ -874,9 +874,15 @@ endif()
 if(AV_BUILD_USD)
     set(USD_TARGET pxr)
 
+    if(APPLE)
+        set(PYTHON_EXECUTABLE python3)
+    else()
+        set(PYTHON_EXECUTABLE python)
+    endif()
+
     ExternalProject_Add(${USD_TARGET}
         GIT_REPOSITORY https://github.com/PixarAnimationStudios/USD.git
-        GIT_TAG v23.05
+        GIT_TAG v25.08
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
         BUILD_ALWAYS 0
@@ -886,7 +892,7 @@ if(AV_BUILD_USD)
         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/usd
         BINARY_DIR ${BUILD_DIR}/usd_build
         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-        BUILD_COMMAND python ${CMAKE_CURRENT_BINARY_DIR}/usd/build_scripts/build_usd.py
+        BUILD_COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/usd/build_scripts/build_usd.py
             --build-shared
             --no-examples
             --no-tools
