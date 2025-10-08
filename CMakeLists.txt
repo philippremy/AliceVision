@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.30)
 project(aliceVision LANGUAGES C CXX)
 
+# Initialize CMAKE_OSX_ARCHITECTURES, if not specified on the command line.
+if(APPLE AND NOT CMAKE_OSX_ARCHITECTURES)
+    message(STATUS "Host processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+        set(CMAKE_OSX_ARCHITECTURES "arm64")
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(CMAKE_OSX_ARCHITECTURES "x86_64")
+    else()
+        message(FATAL_ERROR "CMAKE_HOST_SYSTEM_PROCESSOR was neither arm64 nor x86_64 on an Apple platform and CMAKE_OSX_ARCHITECTURES was not specified!")
+    endif()
+endif()
+
 option(ALICEVISION_BUILD_DEPENDENCIES "Build all AliceVision dependencies" OFF)
 option(AV_BUILD_ALICEVISION "Enable building of AliceVision" ON)
 option(AV_EIGEN_MEMORY_ALIGNMENT "Enable Eigen memory alignment" ON)
