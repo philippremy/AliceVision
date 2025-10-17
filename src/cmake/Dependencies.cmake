@@ -1555,10 +1555,17 @@ if(AV_BUILD_SWIG)
         DEPENDS ${PCRE2_TARGET}
     )
 
-    set(SWIG_CMAKE_FLAGS
-        -DSWIG_DIR=${CMAKE_INSTALL_PREFIX}/share/swig/4.3.0
-        -DSWIG_EXECUTABLE=${CMAKE_INSTALL_PREFIX}/bin-deps
-    )
+    if(APPLE)
+        set(SWIG_CMAKE_FLAGS
+            -DSWIG_DIR=${CMAKE_INSTALL_PREFIX}/share/swig/4.3.0
+            -DSWIG_EXECUTABLE=${CMAKE_INSTALL_PREFIX}/bin/swig
+        )
+    else()
+        set(SWIG_CMAKE_FLAGS
+            -DSWIG_DIR=${CMAKE_INSTALL_PREFIX}/share/swig/4.3.0
+            -DSWIG_EXECUTABLE=${CMAKE_INSTALL_PREFIX}/bin-deps
+        )
+    endif()
 endif()
 
 if(AV_BUILD_XERCESC)
