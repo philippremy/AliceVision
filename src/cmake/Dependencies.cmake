@@ -504,8 +504,8 @@ if(AV_BUILD_TIFF)
     set(TIFF_TARGET tiff)
 
     ExternalProject_Add(${TIFF_TARGET}
-        URL http://download.osgeo.org/libtiff/tiff-4.5.0.tar.gz
-        URL_HASH MD5=db9e220a1971acc64487f1d51a20dcaa
+        URL https://download.osgeo.org/libtiff/tiff-4.7.1.tar.xz
+        URL_HASH MD5=f1524d2d57d93e8a521c30e3a56b99e6
         DOWNLOAD_DIR ${BUILD_DIR}/download/tiff
         PREFIX ${BUILD_DIR}
         BUILD_IN_SOURCE 0
@@ -514,11 +514,14 @@ if(AV_BUILD_TIFF)
         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/tiff
         BINARY_DIR ${BUILD_DIR}/tiff_build
         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure 
-            --prefix=<INSTALL_DIR>
-            --disable-tests
-            --disable-docs
-            --disable-tools
+        CONFIGURE_COMMAND
+            ${CMAKE_COMMAND}
+            ${CMAKE_CORE_BUILD_FLAGS}
+            -Dtiff-tools=OFF
+            -Dtiff-tests=OFF
+            -Dtiff-docs=OFF
+            -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+            <SOURCE_DIR>
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         INSTALL_COMMAND $(MAKE) install
         DEPENDS ${ZLIB_TARGET}
