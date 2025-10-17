@@ -1055,6 +1055,9 @@ add_subdirectory(dependencies)
 # AliceVision modules
 # ==============================================================================
 
+# Initial global target list is empty, will be added by target helper functions
+set(ALICEVISION_GLOBAL_TARGET_LIST "" CACHE INTERNAL "Global list of all AliceVision targets enabled")
+
 # software(s) under patent or commercial licence
 # Included for research purpose only
 if (ALICEVISION_BUILD_SFM)
@@ -1128,3 +1131,28 @@ if (ALICEVISION_BUILD_SWIG_BINDING)
 endif()
 
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${cmakeUninstallFile}")
+
+# ==============================================================================
+# Bundling on Apple targets
+# ==============================================================================
+# Get output file name for each target
+if(APPLE)
+    find_program(PYTHON_EXECUTABLE python3)
+    set(ALICEVISION_BUILD_ARTIFACTS)
+    foreach(AV_TARGET ${ALICEVISION_GLOBAL_TARGET_LIST})
+        # Different handling if Framework
+        get_target_property(IS_FRAMEWORK ${AV_TARGET} FRAMEWORK)
+        if(IS_FRAMEWORK)
+            list(APPEND ALICEVISION_BUILD_ARTIFACTS "$<TARGET_BUNDLE_DIR:${AV_TARGET}>")
+        else()
+            list(APPEND ALICEVISION_BUILD_ARTIFACTS "$<TARGET_FILE:${AV_TARGET}>")
+        endif()
+    endforeach()
+    # Add a custom target
+    add_custom_target(darwin-bundle
+        ${PYTHON_EXECUTABLE} ${ALICEVISION_ROOT}/../src/cmake/darwin_bundle.py -o ${ALICEVISION_BUNDLE_PREFIX} ${ALICEVISION_BUILD_ARTIFACTS}
+        DEPENDS ${ALICEVISION_GLOBAL_TARGET_LIST}
+        COMMENT "Creating Darwin Bundle"
+        COMMAND_EXPAND_LISTS
+    )
+endif()

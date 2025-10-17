@@ -1688,6 +1688,7 @@ if(AV_BUILD_ALICEVISION)
         -DBUILD_APPLE_FRAMEWORKS=${BUILD_APPLE_FRAMEWORKS}
         -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
         -DALICEVISION_ROOT=${ALICEVISION_ROOT}
+        -DALICEVISION_BUNDLE_PREFIX=${ALICEVISION_BUNDLE_PREFIX}
     )
     set(AV_COMPONENT_FLAGS
         -DAV_BUILD_ALICEVISION=${AV_BUILD_ALICEVISION}
@@ -1849,4 +1850,11 @@ if(AV_BUILD_ALICEVISION)
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         DEPENDS ${AV_DEPS}
     )
+
+    # Pipe through the darwin-bundle target on Apple targets
+    if(APPLE)
+        add_custom_target(darwin-bundle
+            ${CMAKE_MAKE_PROGRAM} -C ${BUILD_DIR}/aliceVision_build darwin-bundle
+        )
+    endif()
 endif()
