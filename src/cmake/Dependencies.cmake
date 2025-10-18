@@ -145,6 +145,30 @@ set(CMAKE_CORE_BUILD_FLAGS
 )
 
 
+# Set additional reusable flags for cross-compiling on macOS
+# Supports x86_64/arm64 cross-compilation
+if(APPLE)
+    # Get the current sysroot
+    execute_process(COMMAND xcrun --sdk macosx --show-sdk-path
+        OUTPUT_VARIABLE APPLE_SYSROOT
+        COMMAND_ERROR_IS_FATAL ANY
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+        set(APPLE_ARCH_FLAGS -arch\ arm64)
+        set(APPLE_ARCH_CFLAGS CFLAGS=${APPLE_ARCH_FLAGS})
+        set(APPLE_ARCH_CXXFLAGS CXXFLAGS=${APPLE_ARCH_FLAGS})
+        set(APPLE_ARCH_LDFLAGS LDFLAGS=${APPLE_ARCH_FLAGS})
+        set(APPLE_ARCH_HOST --host=aarch64-apple-darwin)
+    elseif(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+        set(APPLE_ARCH_FLAGS -arch\ x86_64)
+        set(APPLE_ARCH_CFLAGS CFLAGS=${APPLE_ARCH_FLAGS})
+        set(APPLE_ARCH_CXXFLAGS CXXFLAGS=${APPLE_ARCH_FLAGS})
+        set(APPLE_ARCH_LDFLAGS LDFLAGS=${APPLE_ARCH_FLAGS})
+        set(APPLE_ARCH_HOST --host=x86_64-apple-darwin)
+    endif()
+endif()
+
 #### START EXTERNAL ####
 if(AV_BUILD_OPENMP)
     set(OPENMP_TARGET OpenMP)
@@ -690,6 +714,16 @@ if(AV_BUILD_BOOST)
         set(SCRIPT_EXTENSION sh)
     endif()
     
+    # Allow cross-compiling on Apple targets
+    if(APPLE)
+        if(${CMAKE_OSX_ARCHITECTURES} MATCHES "arm64")
+            set(BOOST_APPLE_ARCH arm)
+        elseif(${CMAKE_OSX_ARCHITECTURES} MATCHES "x86_64")
+            set(BOOST_APPLE_ARCH x86)
+        endif()
+        set(APPLE_B2_FLAGS toolset=clang-darwin target-os=darwin architecture=${BOOST_APPLE_ARCH} cxxflags=${APPLE_ARCH_FLAGS} cflags=${APPLE_ARCH_FLAGS} linkflags=${APPLE_ARCH_FLAGS})
+    endif()
+
     ExternalProject_Add(${BOOST_TARGET}
         URL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.bz2
         URL_HASH MD5=2d098ba2e1457708a02de996857c2b10
@@ -706,10 +740,10 @@ if(AV_BUILD_BOOST)
             ./bootstrap.${SCRIPT_EXTENSION} --prefix=<INSTALL_DIR> --with-libraries=atomic,container,date_time,exception,graph,iostreams,json,log,math,program_options,regex,serialization,system,test,thread,stacktrace,timer
         BUILD_COMMAND
             cd <SOURCE_DIR> &&
-            ./b2 --prefix=<INSTALL_DIR> variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE} cxxstd=20 link=shared threading=multi -j8
+            ./b2 --prefix=<INSTALL_DIR> variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE} cxxstd=20 link=shared threading=multi ${APPLE_B2_FLAGS} -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         INSTALL_COMMAND
             cd <SOURCE_DIR> &&
-            ./b2 variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE} cxxstd=20 link=shared threading=multi install
+            ./b2 variant=${DEPS_CMAKE_BUILD_TYPE_LOWERCASE} cxxstd=20 link=shared threading=multi ${APPLE_B2_FLAGS} install
         DEPENDS ${ZLIB_TARGET}
     )
 
@@ -735,6 +769,14 @@ if(AV_BUILD_FFMPEG)
                     set(VPX_TOOLCHAIN_FLAG --target=x86_64-darwin24-gcc)
                 elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
                     set(VPX_TOOLCHAIN_FLAG --target=arm64-darwin24-gcc)
+                endif()
+            else() # Lower
+                # Extract major Darwin Version
+                string(REGEX MATCH "^[0-9]+" DARWIN_VERSION_MAJOR "${CMAKE_SYSTEM_VERSION}")
+                if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+                    set(VPX_TOOLCHAIN_FLAG --target=x86_64-darwin${DARWIN_VERSION_MAJOR}-gcc)
+                elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+                    set(VPX_TOOLCHAIN_FLAG --target=arm64-darwin${DARWIN_VERSION_MAJOR}-gcc)
                 endif()
             endif()
         endif()
@@ -770,6 +812,19 @@ if(AV_BUILD_FFMPEG)
         set(FFMPEG_APPLE_LDFLAGS)
     endif()
 
+    if(APPLE)
+        if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+            set(APPLE_FFMPEG_ARCH_FLAGS --arch=x86_64 --enable-cross-compile --sysroot=${APPLE_SYSROOT})
+        elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+            set(APPLE_FFMPEG_ARCH_FLAGS --arch=aarch64 --enable-cross-compile --sysroot=${APPLE_SYSROOT})
+        endif()
+        set(FFMPEG_CFLAGS -I<INSTALL_DIR>/include\ ${APPLE_ARCH_FLAGS})
+        set(FFMPEG_LDFLAGS -L<INSTALL_DIR>/lib\ ${APPLE_ARCH_FLAGS})
+    else()
+        set(FFMPEG_CFLAGS -I<INSTALL_DIR>/include)
+        set(FFMPEG_LDFLAGS -L<INSTALL_DIR>/lib)
+    endif()
+
     ExternalProject_add(${FFMPEG_TARGET}
         URL https://www.ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz
         URL_HASH MD5=26f2bd7d20c6c616f31d7130c88d7250
@@ -782,13 +837,14 @@ if(AV_BUILD_FFMPEG)
         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
         CONFIGURE_COMMAND <SOURCE_DIR>/configure 
             --prefix=<INSTALL_DIR>
-            --extra-cflags="-I<INSTALL_DIR>/include"
-            --extra-ldflags="-L<INSTALL_DIR>/lib"
+            --extra-cflags=${FFMPEG_CFLAGS}
+            --extra-ldflags=${FFMPEG_LDFLAGS}
             --enable-shared
             --disable-static
             --disable-gpl
             --enable-nonfree
             --enable-libvpx
+            ${APPLE_FFMPEG_ARCH_FLAGS}
             ${FFMPEG_APPLE_LDFLAGS}
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
         DEPENDS ${VPX_TARGET}
@@ -922,6 +978,7 @@ if(AV_BUILD_USD)
 
     if(APPLE)
         set(PYTHON_EXECUTABLE python3)
+        set(APPLE_ARCH_TARGET_FLAG --build-target ${CMAKE_OSX_ARCHITECTURES})
     else()
         set(PYTHON_EXECUTABLE python)
     endif()
@@ -953,6 +1010,7 @@ if(AV_BUILD_USD)
             --no-tests
             --no-docs
             --no-python
+            ${APPLE_ARCH_TARGET_FLAG}
             <INSTALL_DIR>
     )
 
@@ -1443,6 +1501,7 @@ if(AV_BUILD_LEMON)
         BINARY_DIR ${BUILD_DIR}/${LEMON_TARGET}_build
         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+            -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}    # FIXME: Use CMAKE_CORE_BUILD_FLAGS, as soon as LEMON supports C++20.
             -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> <SOURCE_DIR>
         BUILD_COMMAND $(MAKE) -j${AV_BUILD_DEPENDENCIES_PARALLEL}
     )
