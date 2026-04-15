@@ -486,7 +486,7 @@ endif()
 ### MVS software
 if (ALICEVISION_BUILD_MVS)
 
-    if (ALICEVISION_HAVE_CUDA) # Depth map computation need CUDA
+    if (ALICEVISION_HAVE_CUDA OR ALICEVISION_HAVE_METAL) # Depth map computation need CUDA/Metal
         # Depth Map Estimation
         alicevision_add_software(aliceVision_depthMapEstimation
             SOURCE main_depthMapEstimation.cpp
@@ -497,6 +497,7 @@ if (ALICEVISION_BUILD_MVS)
                   aliceVision_mvsData
                   aliceVision_mvsUtils
                   aliceVision_depthMap
+                  aliceVision_depthMap_mtl
                   aliceVision_sfmData
                   aliceVision_sfmDataIO
                   Boost::program_options
@@ -512,6 +513,7 @@ if (ALICEVISION_BUILD_MVS)
                   aliceVision_mvsUtils
                   aliceVision_fuseCut
                   aliceVision_depthMap
+                  aliceVision_depthMap_mtl
                   aliceVision_sfmData
                   aliceVision_sfmDataIO
                   Boost::program_options

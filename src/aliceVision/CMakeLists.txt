@@ -58,6 +58,11 @@ if (ALICEVISION_BUILD_MVS)
     if (ALICEVISION_HAVE_CUDA)
         add_subdirectory(depthMap)
     endif()
+
+    if(APPLE AND ALICEVISION_HAVE_METAL AND ALICEVISION_HAVE_OBJCXX)
+        add_subdirectory(depthMap_mtl)
+    endif()
+
 endif()
 
 if (ALICEVISION_HAVE_ONNX)

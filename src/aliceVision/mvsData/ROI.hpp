@@ -6,24 +6,42 @@
 
 #pragma once
 
-// allows code sharing between NVCC and other compilers
+// allows code sharing between NVCC, METALC and other compilers
 #if defined(__NVCC__)
     #define CUDA_HOST_DEVICE __host__ __device__
     #define CUDA_HOST __host__
-    #define CUDA_CEIL(f) ceil(f)
-    #define CUDA_FLOOR(f) floor(f)
-    #define CUDA_MIN(a, b) min(a, b)
-    #define CUDA_MAX(a, b) max(a, b)
-#else
+
+    #define SHARED_CEIL(f) ceil(f)
+    #define SHARED_FLOOR(f) floor(f)
+    #define SHARED_MIN(a, b) min(a, b)
+    #define SHARED_MAX(a, b) max(a, b)
+    #define MTL_THREAD_ADDR
+#elif defined(__METAL__)
+    #include <metal_stdlib>
+
     #define CUDA_HOST_DEVICE
     #define CUDA_HOST
-    #define CUDA_CEIL(f) std::ceil(f)
-    #define CUDA_FLOOR(f) std::floor(f)
-    #define CUDA_MIN(a, b) std::min(a, b)
-    #define CUDA_MAX(a, b) std::max(a, b)
+
+    #define SHARED_CEIL(f) metal::ceil(f)
+    #define SHARED_FLOOR(f) metal::floor(f)
+    #define SHARED_MIN(a, b) metal::min(a, b)
+    #define SHARED_MAX(a, b) metal::max(a, b)
+
+    #define MTL_THREAD_ADDR thread
+#else
     #include <algorithm>
     #include <cmath>
     #include <ostream>
+
+    #define CUDA_HOST_DEVICE
+    #define CUDA_HOST
+
+    #define SHARED_CEIL(f) std::ceil(f)
+    #define SHARED_FLOOR(f) std::floor(f)
+    #define SHARED_MIN(a, b) std::min(a, b)
+    #define SHARED_MAX(a, b) std::max(a, b)
+
+    #define MTL_THREAD_ADDR
 #endif
 
 namespace aliceVision {
@@ -67,7 +85,8 @@ struct Range
     CUDA_HOST inline bool contains(unsigned int i) const { return ((begin <= i) && (end > i)); }
 };
 
-inline Range intersect(const Range& a, const Range& b) { return Range(CUDA_MAX(a.begin, b.begin), CUDA_MIN(a.end, b.end)); }
+inline Range intersect(MTL_THREAD_ADDR const Range& a, MTL_THREAD_ADDR const Range& b)
+{ return Range(SHARED_MAX(a.begin, b.begin), SHARED_MIN(a.end, b.end)); }
 
 /*
  * @struct ROI
@@ -97,7 +116,7 @@ struct ROI
      * @param[in] in_rangeX the X index range
      * @param[in] in_rangeY the Y index range
      */
-    CUDA_HOST_DEVICE ROI(const Range& in_rangeX, const Range& in_rangeY)
+    CUDA_HOST_DEVICE ROI(MTL_THREAD_ADDR const Range& in_rangeX, MTL_THREAD_ADDR const Range& in_rangeY)
       : x(in_rangeX),
         y(in_rangeY)
     {}
@@ -132,10 +151,8 @@ struct ROI
  * @param[in] height the given image height
  * @return true if valid
  */
-CUDA_HOST inline bool checkImageROI(const ROI& roi, int width, int height)
-{
-    return ((roi.x.end <= (unsigned int)(width)) && (roi.x.begin < roi.x.end) && (roi.y.end <= (unsigned int)(height)) && (roi.y.begin < roi.y.end));
-}
+CUDA_HOST inline bool checkImageROI(MTL_THREAD_ADDR const ROI& roi, int width, int height)
+{ return ((roi.x.end <= (unsigned int)(width)) && (roi.x.begin < roi.x.end) && (roi.y.end <= (unsigned int)(height)) && (roi.y.begin < roi.y.end)); }
 
 /**
  * @brief Downscale the given Range with the given downscale factor
@@ -143,10 +160,8 @@ CUDA_HOST inline bool checkImageROI(const ROI& roi, int width, int height)
  * @param[in] downscale the downscale factor to apply
  * @return the downscaled Range
  */
-CUDA_HOST inline Range downscaleRange(const Range& range, float downscale)
-{
-    return Range(CUDA_FLOOR(range.begin / downscale), CUDA_CEIL(range.end / downscale));
-}
+CUDA_HOST inline Range downscaleRange(MTL_THREAD_ADDR const Range& range, float downscale)
+{ return Range(SHARED_FLOOR(range.begin / downscale), SHARED_CEIL(range.end / downscale)); }
 
 /**
  * @brief Upscale the given Range with the given upscale factor
@@ -154,10 +169,8 @@ CUDA_HOST inline Range downscaleRange(const Range& range, float downscale)
  * @param[in] upscale the upscale factor to apply
  * @return the upscaled Range
  */
-CUDA_HOST inline Range upscaleRange(const Range& range, float upscale)
-{
-    return Range(CUDA_FLOOR(range.begin * upscale), CUDA_CEIL(range.end * upscale));
-}
+CUDA_HOST inline Range upscaleRange(MTL_THREAD_ADDR const Range& range, float upscale)
+{ return Range(SHARED_FLOOR(range.begin * upscale), SHARED_CEIL(range.end * upscale)); }
 
 /**
  * @brief Inflate the given Range with the given factor
@@ -165,11 +178,11 @@ CUDA_HOST inline Range upscaleRange(const Range& range, float upscale)
  * @param[in] factor the inflate factor to apply
  * @return the inflated Range
  */
-CUDA_HOST inline Range inflateRange(const Range& range, float factor)
+CUDA_HOST inline Range inflateRange(MTL_THREAD_ADDR const Range& range, float factor)
 {
     const float midRange = range.begin + (range.size() * 0.5f);
     const float inflateSize = range.size() * factor * 0.5f;
-    return Range(CUDA_FLOOR(CUDA_MAX(midRange - inflateSize, 0.f)), CUDA_CEIL(midRange + inflateSize));
+    return Range(SHARED_FLOOR(SHARED_MAX(midRange - inflateSize, 0.f)), SHARED_CEIL(midRange + inflateSize));
 }
 
 /**
@@ -178,7 +191,8 @@ CUDA_HOST inline Range inflateRange(const Range& range, float factor)
  * @param[in] downscale the downscale factor to apply
  * @return the downscaled ROI
  */
-CUDA_HOST inline ROI downscaleROI(const ROI& roi, float downscale) { return ROI(downscaleRange(roi.x, downscale), downscaleRange(roi.y, downscale)); }
+CUDA_HOST inline ROI downscaleROI(MTL_THREAD_ADDR const ROI& roi, float downscale)
+{ return ROI(downscaleRange(roi.x, downscale), downscaleRange(roi.y, downscale)); }
 
 /**
  * @brief Upscale the given ROI with the given upscale factor
@@ -186,7 +200,8 @@ CUDA_HOST inline ROI downscaleROI(const ROI& roi, float downscale) { return ROI(
  * @param[in] upscale the upscale factor to apply
  * @return the upscaled ROI
  */
-CUDA_HOST inline ROI upscaleROI(const ROI& roi, float upscale) { return ROI(upscaleRange(roi.x, upscale), upscaleRange(roi.y, upscale)); }
+CUDA_HOST inline ROI upscaleROI(MTL_THREAD_ADDR const ROI& roi, float upscale)
+{ return ROI(upscaleRange(roi.x, upscale), upscaleRange(roi.y, upscale)); }
 
 /**
  * @brief Inflate the given ROI with the given factor
@@ -194,11 +209,12 @@ CUDA_HOST inline ROI upscaleROI(const ROI& roi, float upscale) { return ROI(upsc
  * @param[in] factor the inflate factor to apply
  * @return the Inflated ROI
  */
-CUDA_HOST inline ROI inflateROI(const ROI& roi, float factor) { return ROI(inflateRange(roi.x, factor), inflateRange(roi.y, factor)); }
+CUDA_HOST inline ROI inflateROI(MTL_THREAD_ADDR const ROI& roi, float factor)
+{ return ROI(inflateRange(roi.x, factor), inflateRange(roi.y, factor)); }
 
-inline ROI intersect(const ROI& a, const ROI& b) { return ROI(intersect(a.x, b.x), intersect(a.y, b.y)); }
+inline ROI intersect(MTL_THREAD_ADDR const ROI& a, MTL_THREAD_ADDR const ROI& b) { return ROI(intersect(a.x, b.x), intersect(a.y, b.y)); }
 
-#if !defined(__NVCC__)
+#if !defined(__NVCC__) && !defined(__METAL__)
 inline std::ostream& operator<<(std::ostream& os, const Range& range)
 {
     os << range.begin << "-" << range.end;
