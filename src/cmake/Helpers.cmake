@@ -3,7 +3,7 @@
 
 # Add library function
 function(alicevision_add_library library_name)
-    set(options USE_CUDA)
+    set(options USE_CUDA USE_METAL)
     set(singleValues "")
     set(multipleValues SOURCES PUBLIC_LINKS PRIVATE_LINKS PUBLIC_INCLUDE_DIRS PRIVATE_INCLUDE_DIRS PUBLIC_DEFINITIONS PRIVATE_DEFINITIONS RESOURCES)
 
@@ -15,6 +15,26 @@ function(alicevision_add_library library_name)
 
     if(NOT LIBRARY_SOURCES)
         message(FATAL_ERROR "You must provide the library SOURCES in 'alicevision_add_library'")
+    endif()
+
+    # Remove any Metal files from the list
+    if (LIBRARY_USE_METAL)
+        set(${library_name}_KERNEL_SOURCES)
+        foreach(SRC_FILE ${LIBRARY_SOURCES})
+            if (SRC_FILE MATCHES "\\.(mtl|metal|kernel)$")
+                list(APPEND ${library_name}_KERNEL_SOURCES ${SRC_FILE})
+            endif()
+        endforeach()
+        list(LENGTH ${library_name}_KERNEL_SOURCES ${library_name}_KERNEL_SOURCES_LEN)
+        if (NOT ${library_name}_KERNEL_SOURCES_LEN EQUAL 0)
+            foreach(SRC_FILE ${${library_name}_KERNEL_SOURCES})
+                list(REMOVE_ITEM LIBRARY_SOURCES ${SRC_FILE})
+            endforeach()
+            add_metal_shader_library(${library_name}_kernels
+                STANDARD metal3.2
+                ${${library_name}_KERNEL_SOURCES}
+            )
+        endif()
     endif()
 
     # Generate Windows versioning information
@@ -45,6 +65,13 @@ function(alicevision_add_library library_name)
                 CUDA_RESOLVE_DEVICE_SYMBOLS ON
                 POSITION_INDEPENDENT_CODE ON
         )
+    endif()
+
+    if (LIBRARY_USE_METAL)
+        list(LENGTH ${library_name}_KERNEL_SOURCES ${library_name}_KERNEL_SOURCES_LEN)
+        if (NOT ${library_name}_KERNEL_SOURCES_LEN EQUAL 0)
+            add_dependencies(${library_name} ${library_name}_kernels)
+        endif()
     endif()
 
     if (ALICEVISION_REMOVE_ABSOLUTE)
@@ -89,6 +116,32 @@ function(alicevision_add_library library_name)
         VERSION "${ALICEVISION_VERSION_MAJOR}.${ALICEVISION_VERSION_MINOR}"
     )
 
+    if (LIBRARY_USE_METAL)
+
+        target_include_directories(${library_name}_kernels
+            PUBLIC $<BUILD_INTERFACE:${ALICEVISION_INCLUDE_DIR}>
+                $<BUILD_INTERFACE:${generatedDir}>
+                $<INSTALL_INTERFACE:include>
+                ${LIBRARY_PUBLIC_INCLUDE_DIRS}
+            PRIVATE ${LIBRARY_PRIVATE_INCLUDE_DIRS}
+        )
+
+        target_compile_definitions(${library_name}_kernels
+            PUBLIC ${LIBRARY_PUBLIC_DEFINITIONS}
+            PRIVATE ${LIBRARY_PRIVATE_DEFINITIONS}
+        )
+
+        set_property(TARGET ${library_name}_kernels
+            PROPERTY FOLDER "AliceVision"
+        )
+
+        set_target_properties(${library_name}_kernels
+            PROPERTIES SOVERSION ${ALICEVISION_VERSION_MAJOR}
+            VERSION "${ALICEVISION_VERSION_MAJOR}.${ALICEVISION_VERSION_MINOR}"
+        )
+
+    endif()
+
     if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
         target_compile_options(${library_name} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>)
     endif()
@@ -108,6 +161,10 @@ function(alicevision_add_library library_name)
             RESOURCE "${LIBRARY_RESOURCES}"
             MACOSX_FRAMEWORK_INFO_PLIST "${ALICEVISION_ROOT}/../src/cmake/FrameworkInfo.plist.in"
         )
+        # Custom install step for the generated MTL library
+        if (LIBRARY_USE_METAL)
+            install(FILES "$<TARGET_FILE:${library_name}_kernels>" DESTINATION "$<TARGET_BUNDLE_CONTENT_DIR:${library_name}>/Resources")
+        endif()
     endif()
 
     # Add to global target list
@@ -126,6 +183,15 @@ function(alicevision_add_library library_name)
         RESOURCE
             DESTINATION ${CMAKE_INSTALL_DATADIR}/aliceVision
     )
+
+    if(LIBRARY_USE_METAL)
+        install(TARGETS ${library_name}_kernels
+            EXPORT aliceVision-targets
+            LIBRARY
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/aliceVision
+        )
+    endif()
+
 endfunction()
 
 
