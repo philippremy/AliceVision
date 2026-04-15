@@ -1,0 +1,3 @@
+[submodule "src/cmake/ThirdParty/CMake-MetalShaderSupport"]
+	path = src/cmake/ThirdParty/CMake-MetalShaderSupport
+	url = https://github.com/dpogue/CMake-MetalShaderSupport.git

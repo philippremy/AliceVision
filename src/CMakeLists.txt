@@ -798,6 +798,30 @@ if (ALICEVISION_HAVE_CUDA)
 endif()
 
 # ==============================================================================
+# Apple Metal
+# ==============================================================================
+if (ALICEVISION_USE_METAL OR AV_USE_METAL)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/ThirdParty/CMake-MetalShaderSupport/cmake")
+    include(CheckLanguage)
+    check_language(OBJCXX)
+    if(CMAKE_OBJCXX_COMPILER)
+        enable_language(OBJCXX)
+        set(ALICEVISION_HAVE_OBJCXX ON)
+    else()
+        message(WARNING "Requested Apple Metal support, but CMake could not determine a valid Objective-C++ compiler, which is needed to build the Metal host code")
+    endif()
+    check_language(Metal)
+    if((CMAKE_Metal_COMPILER OR CMAKE_GENERATOR STREQUAL "Xcode") AND ALICEVISION_HAVE_OBJCXX)
+        include(MetalShaderSupport)
+        enable_language(Metal)
+        set(ALICEVISION_HAVE_METAL ON)
+    else()
+        message(WARNING "Requested Apple Metal support, but CMake could not determine a valid Metal toolchain")
+    endif()
+endif()
+
+
+# ==============================================================================
 # SWIG
 # ==============================================================================
 if (ALICEVISION_BUILD_SWIG_BINDING)
@@ -1109,6 +1133,12 @@ install(EXPORT aliceVision-targets DESTINATION ${cmakeConfigInstallDir} FILE ${t
 install(FILES "${cmakeProjectConfig}" "${cmakeVersionConfig}"
         DESTINATION "${cmakeConfigInstallDir}")
 
+# If bundled as Apple Frameworks, we can utilize the Bundle APIs from
+# Foundation
+set(ALICEVISION_BUNDLED_AS_FRAMEWORKS 0)
+if(BUILD_APPLE_FRAMEWORKS)
+    set(ALICEVISION_BUNDLED_AS_FRAMEWORKS 1)
+endif()
 
 # create the config.hpp file containing all the preprocessor definitions
 set(configfile "${generatedDir}/aliceVision/config.hpp")
