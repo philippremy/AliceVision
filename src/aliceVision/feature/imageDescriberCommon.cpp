@@ -35,9 +35,7 @@ std::string EImageDescriberType_informations()
            "* tag16h5: AprilTag family tag16h5.\n"
 #endif
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
            "* sift_ocv: OpenCV implementation of SIFT describer.\n"
-    #endif
            "* akaze_ocv: OpenCV implementation of A-KAZE describer.\n"
 #endif
            "";
@@ -77,10 +75,8 @@ std::string EImageDescriberType_enumToString(EImageDescriberType imageDescriberT
 #endif
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
         case EImageDescriberType::SIFT_OCV:
             return "sift_ocv";
-    #endif  // ALICEVISION_HAVE_OCVSIFT
         case EImageDescriberType::AKAZE_OCV:
             return "akaze_ocv";
 #endif  // ALICEVISION_HAVE_OPENCV
@@ -130,10 +126,8 @@ EImageDescriberType EImageDescriberType_stringToEnum(const std::string& imageDes
 #endif
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
     if (type == "sift_ocv")
         return EImageDescriberType::SIFT_OCV;
-    #endif  // ALICEVISION_HAVE_OCVSIFT
     if (type == "akaze_ocv")
         return EImageDescriberType::AKAZE_OCV;
 #endif  // ALICEVISION_HAVE_OPENCV

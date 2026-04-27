@@ -36,10 +36,8 @@ enum class EImageDescriberType : unsigned char
 #endif
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
     ,
     SIFT_OCV = 40
-    #endif
     ,
     AKAZE_OCV = 41
 #endif
@@ -126,10 +124,8 @@ inline float getStrongSupportCoeff(EImageDescriberType imageDescriberType)
 #endif
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
         case EImageDescriberType::SIFT_OCV:
             return 0.14f;
-    #endif  // ALICEVISION_HAVE_OCVSIFT
         case EImageDescriberType::AKAZE_OCV:
             return 0.14f;
 #endif  // ALICEVISION_HAVE_OPENCV

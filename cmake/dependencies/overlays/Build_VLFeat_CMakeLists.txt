@@ -1,0 +1,186 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(VLFeat VERSION 0.9.21 LANGUAGES C)
+
+# Include helpers
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+# Windows should export the functions by default, so they can be used from the
+# headers
+if(WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+# The regular VL library
+add_library(VL
+  vl/aib.c
+  vl/array.c
+  vl/covdet.c
+  vl/dsift.c
+  vl/fisher.c
+  vl/generic.c
+  vl/getopt_long.c
+  vl/gmm.c
+  vl/hikmeans.c
+  vl/hog.c
+  vl/homkermap.c
+  vl/host.c
+  vl/ikmeans.c
+  vl/imopv_sse2.c
+  vl/imopv.c
+  vl/kdtree.c
+  vl/kmeans.c
+  vl/lbp.c
+  vl/liop.c
+  vl/mathop_avx.c
+  vl/mathop_sse2.c
+  vl/mathop.c
+  vl/mser.c
+  vl/pgm.c
+  vl/quickshift.c
+  vl/random.c
+  vl/rodrigues.c
+  vl/scalespace.c
+  vl/sift.c
+  vl/slic.c
+  vl/stringop.c
+  vl/svm.c
+  vl/svmdataset.c
+  vl/vlad.c
+)
+
+# Link Threads and OpenMP, if requested
+if(VL_USE_OPENMP)
+  find_package(OpenMP REQUIRED COMPONENTS C)
+  target_link_libraries(VL PUBLIC OpenMP::OpenMP_C)
+endif()
+if(VL_USE_THREADS)
+  find_package(Threads REQUIRED)
+  target_link_libraries(VL PUBLIC ${Threads_LIBRARIES})
+endif()
+
+# Define macros
+if(NOT VL_USE_THREADS)
+  target_compile_definitions(VL PUBLIC VL_DISABLE_THREADS)
+endif()
+if(NOT VL_USE_OPENMP)
+  target_compile_definitions(VL PUBLIC VL_DISABLE_OPENMP)
+endif()
+if(NOT VL_USE_SSE2)
+  target_compile_definitions(VL PUBLIC VL_DISABLE_SSE2)
+endif()
+if(NOT VL_USE_AVX)
+  target_compile_definitions(VL PUBLIC VL_DISABLE_AVX)
+endif()
+
+# The library output names should be lowercase
+set_target_properties(VL PROPERTIES
+    OUTPUT_NAME vl
+)
+
+# Three JBIG headers
+set(VLFeat_HEADERS
+  vl/aib.h
+  vl/array.h
+  vl/covdet.h
+  vl/dsift.h
+  vl/fisher.h
+  vl/generic.h
+  vl/getopt_long.h
+  vl/gmm.h
+  vl/heap-def.h
+  vl/hikmeans.h
+  vl/hog.h
+  vl/homkermap.h
+  vl/host.h
+  vl/ikmeans.h
+  vl/imopv_sse2.h
+  vl/imopv.h
+  vl/kdtree.h
+  vl/kmeans.h
+  vl/lbp.h
+  vl/liop.h
+  vl/mathop_avx.h
+  vl/mathop_sse2.h
+  vl/mathop.h
+  vl/mser.h
+  vl/pgm.h
+  vl/qsort-def.h
+  vl/quickshift.h
+  vl/random.h
+  vl/rodrigues.h
+  vl/scalespace.h
+  vl/shuffle-def.h
+  vl/sift.h
+  vl/slic.h
+  vl/stringop.h
+  vl/svm.h
+  vl/svmdataset.h
+  vl/vlad.h
+)
+
+target_include_directories(VL
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/vl>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# macOS deployment target
+if(APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9"
+    CACHE STRING "Minimum macOS deployment version.")
+endif()
+
+set_target_properties(VL PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  VERSION   "${PROJECT_VERSION}"
+  SOVERSION "${PROJECT_VERSION_MAJOR}"
+)
+
+# Install the targets
+install(
+  TARGETS   VL
+  EXPORT    VLFeatTargets
+  ARCHIVE   DESTINATION "${CMAKE_INSTALL_LIBDIR}"  COMPONENT library
+  LIBRARY   DESTINATION "${CMAKE_INSTALL_LIBDIR}"  COMPONENT library
+  RUNTIME   DESTINATION "${CMAKE_INSTALL_BINDIR}"  COMPONENT library
+)
+
+# Install the headers
+install(
+  FILES       ${VLFeat_HEADERS}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/vl"
+  COMPONENT   headers
+)
+
+# Write a basic version file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/VLFeatConfigVersion.cmake"
+  VERSION "${PROJECT_VERSION}"
+  COMPATIBILITY SameMajorVersion
+)
+
+# Write a basic Config file from our generic template
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/OverlayConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/VLFeatConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/VLFeat"
+  PATH_VARS
+    CMAKE_INSTALL_LIBDIR
+)
+
+# Install version and config file
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/VLFeatConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/VLFeatConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/VLFeat"
+)
+
+# Install targets
+install(
+  EXPORT      VLFeatTargets
+  NAMESPACE   "VLFeat::"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/VLFeat"
+)

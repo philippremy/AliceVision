@@ -1,0 +1,101 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(MeshSDFilter LANGUAGES CXX VERSION 1.0.0)
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(MESHSDFILTER_HEADERS
+  EigenTypes.h
+  MeshNormalDenoising.h
+  MeshNormalFilter.h
+  MeshTypes.h
+  SDFilter.h
+)
+
+add_library(MeshSDLibrary INTERFACE)
+
+target_compile_definitions(MeshSDLibrary
+  INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/DUSE_MSVC /D_USE_MATH_DEFINES>
+)
+
+# Detect OpenMP environment
+option(MESHSDFILTER_USE_OPENMP ON)
+if(MESHSDFILTER_USE_OPENMP)
+  find_package(OpenMP COMPONENTS CXX)
+  if(OpenMP_FOUND)
+      target_compile_definitions(MeshSDLibrary INTERFACE USE_OPENMP)
+      target_link_libraries(MeshSDLibrary INTERFACE OpenMP::OpenMP_CXX)
+  endif()
+endif()
+
+# Detect Eigen3
+find_package(eigen3 REQUIRED CONFIG NO_MODULE)
+
+# OpenMesh library
+find_package(OpenMesh REQUIRED CONFIG NO_MODULE)
+
+# Include directores
+target_include_directories(MeshSDLibrary
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+# Link Eigen and OpenMeshCore
+target_link_libraries(MeshSDLibrary
+    INTERFACE
+      OpenMeshCore
+      OpenMeshTools
+      Eigen3::Eigen
+)
+
+# Install the targets
+install(
+  TARGETS   MeshSDLibrary
+  EXPORT    MeshSDFilterTargets
+  ARCHIVE   DESTINATION "${CMAKE_INSTALL_LIBDIR}"  COMPONENT library
+  LIBRARY   DESTINATION "${CMAKE_INSTALL_LIBDIR}"  COMPONENT library
+  RUNTIME   DESTINATION "${CMAKE_INSTALL_BINDIR}"  COMPONENT library
+)
+
+# Install the headers
+install(
+  FILES       ${MESHSDFILTER_HEADERS}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  COMPONENT   headers
+)
+
+# Write a basic version file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/MeshSDFilterConfigVersion.cmake"
+  VERSION "${PROJECT_VERSION}"
+  COMPATIBILITY SameMajorVersion
+)
+
+# Write a basic Config file from our generic template
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/OverlayConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/MeshSDFilterConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/MeshSDFilter"
+  PATH_VARS
+    CMAKE_INSTALL_LIBDIR
+)
+
+# Install version and config file
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/MeshSDFilterConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/MeshSDFilterConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/MeshSDFilter"
+)
+
+# Install targets
+install(
+  EXPORT      MeshSDFilterTargets
+  NAMESPACE   "${PROJECT_NAME}::"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/MeshSDFilter"
+)

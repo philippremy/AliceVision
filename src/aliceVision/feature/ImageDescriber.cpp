@@ -24,9 +24,7 @@
 #endif  // ALICEVISION_HAVE_APRILTAG
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
-        #include <aliceVision/feature/openCV/ImageDescriber_SIFT_OCV.hpp>
-    #endif  // ALICEVISION_HAVE_OCVSIFT
+    #include <aliceVision/feature/openCV/ImageDescriber_SIFT_OCV.hpp>
     #include <aliceVision/feature/openCV/ImageDescriber_AKAZE_OCV.hpp>
 #endif  // ALICEVISION_HAVE_OPENCV
 
@@ -246,11 +244,9 @@ std::unique_ptr<ImageDescriber> createImageDescriber(EImageDescriberType imageDe
 #endif  // ALICEVISION_HAVE_APRILTAG
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
         case EImageDescriberType::SIFT_OCV:
             describerPtr.reset(new ImageDescriber_SIFT_openCV());
             break;
-    #endif  // ALICEVISION_HAVE_OCVSIFT
         case EImageDescriberType::AKAZE_OCV:
             describerPtr.reset(new ImageDescriber_AKAZE_OCV());
             break;

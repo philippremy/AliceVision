@@ -1,0 +1,44 @@
+// This file is part of the AliceVision project.
+// Copyright (c) 2026 AliceVision contributors.
+// This Source Code Form is subject to the terms of the Mozilla Public License,
+// v. 2.0. If a copy of the MPL was not distributed with this file,
+// You can obtain one at https://mozilla.org/MPL/2.0/.
+
+/**
+ *
+ * This file contains configuration settings of AliceVision
+ *
+ */
+
+#pragma once
+
+#define ALICEVISION_VERSION         ((((uint32_t)@AV_PROJECT_VERSION_MAJOR@) << 22U) | (((uint32_t)@AV_PROJECT_VERSION_MINOR@) << 12U) | ((uint32_t)@AV_PROJECT_VERSION_PATCH@)))
+#define ALICEVISION_VERSION_MAJOR   ((uint32_t)(ALICEVISION_VERSION) >> 22U)
+#define ALICEVISION_VERSION_MINOR   (((uint32_t)(ALICEVISION_VERSION) >> 12U) & 0x3FFU)
+#define ALICEVISION_VERSION_PATCH   (((uint32_t)ALICEVISION_VERSION) & 0xFFFU)
+#define ALICEVISION_VERSION_STRING  "@AV_PROJECT_VERSION_MAJOR@.@AV_PROJECT_VERSION_MINOR@.@AV_PROJECT_VERSION_PATCH@"
+
+/**
+ * This function checks if a value is defined and true
+ */
+#define ALICEVISION_IS_DEFINED(F) F() == 1
+
+#define ALICEVISION_HAVE_OPENMP() $CACHE{__AV_CONFIG_HAVE_OpenMP}
+
+#define ALICEVISION_HAVE_MOSEK() $CACHE{__AV_CONFIG_HAVE_MOSEK}
+
+#define ALICEVISION_HAVE_OPENCV() $CACHE{__AV_CONFIG_HAVE_OpenCV}
+
+#define ALICEVISION_HAVE_ALEMBIC() $CACHE{__AV_CONFIG_HAVE_Alembic}
+
+#define ALICEVISION_HAVE_CCTAG() $CACHE{__AV_CONFIG_HAVE_CCTag}
+
+#define ALICEVISION_HAVE_APRILTAG() $CACHE{__AV_CONFIG_HAVE_Apriltag}
+
+#define ALICEVISION_HAVE_POPSIFT() $CACHE{__AV_CONFIG_HAVE_PopSift}
+
+#define ALICEVISION_HAVE_CUDA() $CACHE{__AV_CONFIG_HAVE_CUDA}
+
+#define ALICEVISION_HAVE_ONNX() $CACHE{__AV_CONFIG_HAVE_ONNXRuntime}
+
+#define ALICEVISION_HAVE_ONNX_GPU() $CACHE{__AV_CONFIG_HAVE_ONNXRuntimeGPU}

@@ -1,0 +1,128 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(JBIG VERSION 2.1 LANGUAGES C)
+
+# JBIG does not set a C standard, let the compiler decide
+
+# Include helpers
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+# JBIG expects DEBUG to be defined in Debug builds
+add_compile_definitions(
+    $<$<CONFIG:Debug>:DEBUG>
+    $<$<CONFIG:RelWithDebInfo>:DEBUG>
+    $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>>:NDEBUG>
+)
+
+# Windows should export the functions by default, so they can be used from the
+# headers
+if(WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+# The regular jbig library
+add_library(JBIG
+    libjbig/jbig.c
+    libjbig/jbig_ar.c
+)
+
+# The jbig85 library
+add_library(JBIG85
+    libjbig/jbig85.c
+    libjbig/jbig_ar.c
+)
+
+# The library output names should be lowercase
+set_target_properties(JBIG PROPERTIES
+    OUTPUT_NAME jbig
+)
+
+# The library output names should be lowercase
+set_target_properties(JBIG85 PROPERTIES
+    OUTPUT_NAME jbig85
+)
+
+# Three JBIG headers
+set(JBIG_HEADERS
+    libjbig/jbig_ar.h
+    libjbig/jbig.h
+    libjbig/jbig85.h
+)
+
+target_include_directories(JBIG
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libjbig>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+target_include_directories(JBIG85
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libjbig>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# macOS deployment target
+if(APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9"
+    CACHE STRING "Minimum macOS deployment version.")
+endif()
+
+set_target_properties(JBIG PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  VERSION   "${PROJECT_VERSION}"
+  SOVERSION "${PROJECT_VERSION_MAJOR}"
+)
+
+set_target_properties(JBIG85 PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  VERSION   "${PROJECT_VERSION}"
+  SOVERSION "${PROJECT_VERSION_MAJOR}"
+)
+
+# Install the targets
+install(
+  TARGETS   JBIG JBIG85
+  EXPORT    JBIGTargets
+  ARCHIVE   DESTINATION "${CMAKE_INSTALL_LIBDIR}"  COMPONENT library
+  LIBRARY   DESTINATION "${CMAKE_INSTALL_LIBDIR}"  COMPONENT library
+  RUNTIME   DESTINATION "${CMAKE_INSTALL_BINDIR}"  COMPONENT library
+)
+
+# Install the headers
+install(
+  FILES       ${JBIG_HEADERS}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  COMPONENT   headers
+)
+
+# Write a basic version file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/JBIGConfigVersion.cmake"
+  VERSION "${PROJECT_VERSION}"
+  COMPATIBILITY SameMajorVersion
+)
+
+# Write a basic Config file from our generic template
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/OverlayConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/JBIGConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/JBIG"
+  PATH_VARS
+    CMAKE_INSTALL_LIBDIR
+)
+
+# Install version and config file
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/JBIGConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/JBIGConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/JBIG"
+)
+
+# Install targets
+install(
+  EXPORT      JBIGTargets
+  NAMESPACE   "${PROJECT_NAME}::"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/JBIG"
+)

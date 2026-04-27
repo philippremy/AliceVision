@@ -369,11 +369,9 @@ inline std::unique_ptr<IVocabularyTree> createVoctreeForDescriberType(feature::E
 #endif  // ALICEVISION_HAVE_CCTAG
 
 #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENCV)
-    #if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OCVSIFT)
         case EImageDescriberType::SIFT_OCV:
             res.reset(new VocabularyTree<SIFT_Regions::DescriptorT>);
             break;
-    #endif  // ALICEVISION_HAVE_OCVSIFT
         case EImageDescriberType::AKAZE_OCV:
             res.reset(new VocabularyTree<AKAZE_Float_Regions::DescriptorT>);
             break;

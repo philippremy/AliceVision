@@ -1,0 +1,10 @@
+#
+# The most simple @PROJECT_NAME@Config.cmake file possible
+#
+# Used internally by the CMake overlay mechanism of AliceVision, do not
+# consider it a correct or full install of @PROJECT_NAME@!
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+check_required_components("@PROJECT_NAME@")
